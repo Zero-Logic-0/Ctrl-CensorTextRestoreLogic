@@ -2,6 +2,17 @@ Ctrl è un programma di censura del testo, creato per tenere dati sensibili anon
 nasce per far si che ogni professionista,azienda,utente non debba inviare dati personali suoi o di altri sul web e/o 
 su agenti IA per avere una risposta, tutto ciò gira in locale nulla esce dal proprio pc.
 
+[Cosa può censurare]
+Codice Fiscale,
+Partita IVA,
+Email,
+IBAN,
+Carta di Credito,
+Telefono,
+Indirizzo IP,
+Targa,
+Azienda,
+
 COME UTILIZZARLO
 1-installa il file bat
 2-avvia il programma
