@@ -1,0 +1,7 @@
+time  # Modulo per gestire le pause (es. attesa lettura clipboard)
+sys  # Modulo di sistema per gestire la chiusura del programma
+threading  # Modulo per eseguire il listener della tastiera in background senza bloccare il programma
+re  # Modulo per usare le espressioni regolari (ricerca pattern precisi come Email o IBAN)
+spacy  # Libreria di Intelligenza Artificiale per il Natural Language Processing (NLP)
+pyperclip  # Libreria per leggere e sovrascrivere gli appunti (clipboard) di Windows/Mac
+pynput # Modulo per intercettare la combinazione di tasti Ctrl+C a livello globale
