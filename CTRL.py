@@ -17,20 +17,76 @@ except OSError:  # Intercetta l'errore che si verifica se il modello non è inst
     print("python -m spacy download it_core_news_lg\n")  # Mostra il comando esatto per installare il modello
     sys.exit(1)  # Termina immediatamente l'esecuzione del programma segnalando uno stato di errore
 
-class CTRLEngine:  # Definisce la classe principale che si occupa di analizzare e censurare i dati
-    def __init__(self):  # Costruttore della classe, eseguito durante l'inizializzazione del motore
-        self.rigid_patterns = [  # Crea una lista contenente le regole matematiche (Regex) per i dati sensibili
-            ("Codice Fiscale", re.compile(r'\b[A-Z]{6}\d{2}[A-EHLMPR-T]\d{2}[A-Z]\d{3}[A-Z]\b', re.IGNORECASE)),  # Regola per i Codici Fiscali italiani
-            ("Partita IVA", re.compile(r'\b(?:IT)?\d{11}\b', re.IGNORECASE)),  # Regola per trovare le Partite IVA (con o senza 'IT')
-            ("Email", re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b', re.IGNORECASE)),  # Regola standard per gli indirizzi Email
-            ("IBAN", re.compile(r'\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]{4}){3,7}(?:\s?[A-Z0-9]{1,4})?\b', re.IGNORECASE)),  # Regola per i codici IBAN internazionali
-            # Pattern Carte esteso: supporta Amex 15 cifre (inizia con 34 o 37) prima della verifica telefono per evitare sovrapposizioni
+import re  # Importa il modulo espressioni regolari (deve stare in cima al file, fuori dalla classe)
+
+class CTRLEngine:
+    # Definisce la classe principale che si occupa di analizzare e censurare i dati sensibili
+    
+    def __init__(self):
+        # Costruttore della classe, eseguito automaticamente durante l'inizializzazione del motore
+        
+        self.rigid_patterns = [
+            # Crea una lista di tuple. Ogni tupla contiene ("Nome Entità", Regola Regex Compilata)
+            
+            # --- 1. HARDWARE, RETI E CREDENZIALI (Da cercare per primi per evitare conflitti) ---
+            
+            # Dispositivo IMEI (15 cifre esatte). Posizionato PRIMA della carta di credito per evitare false sovrapposizioni!
+            ("IMEI", re.compile(r'\b\d{15}\b')),
+            
+            # Numero di Telaio / VIN (17 caratteri alfanumerici internazionali, esclude le lettere I, O, Q)
+            ("VIN", re.compile(r'\b[A-HJ-NPR-Z0-9]{17}\b', re.IGNORECASE)),
+            
+            # Indirizzo MAC di rete (es. 00:1A:2B:3C:4D:5E oppure con trattini separatori)
+            ("Indirizzo MAC", re.compile(r'\b(?:[0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\b', re.IGNORECASE)),
+            
+            # Indirizzo IP v6 (ricerca esadecimale lunga). Posizionato PRIMA dell'IPv4
+            ("IPv6", re.compile(r'\b(?:[0-9a-fA-F]{1,4}:){1,7}:[0-9a-fA-F]{1,4}\b|\b(?:[0-9a-fA-F]{1,4}:){1,7}:|\b:(?::[0-9a-fA-F]{1,4}){1,7}\b|\b(?:[0-9a-fA-F]{1,4}:)*::(?:[0-9a-fA-F]{1,4}:)*[0-9a-fA-F]{1,4}\b', re.IGNORECASE)),
+
+            # Regola matematica esatta per IP IPv4 classici (es. 192.168.1.1)
+            ("Indirizzo IP", re.compile(r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b')),
+            
+            # Token API o Secret Keys (cattura chiavi esposte nel testo, es. sk_live_...)
+            ("API Key", re.compile(r'\b(?:sk_live_|pk_live_|api_key=|bearer\s+)[a-zA-Z0-9_\-]{16,}\b', re.IGNORECASE)),
+            
+            # --- 2. IDENTIFICATIVI PERSONALI, VEICOLI E FISCALI ---
+            
+            # Regola per i Codici Fiscali italiani (16 caratteri alfanumerici rigorosamente strutturati)
+            ("Codice Fiscale", re.compile(r'\b[A-Z]{6}\d{2}[A-EHLMPR-T]\d{2}[A-Z]\d{3}[A-Z]\b', re.IGNORECASE)),
+            
+            # Regola per la Carta d'Identità Elettronica Italiana (Formato standard: CA12345AA)
+            ("Carta d'Identità", re.compile(r'\b[A-Z]{2}\d{5}[A-Z]{2}\b', re.IGNORECASE)),
+            
+            # Regola per le targhe automobilistiche italiane (es. AB 123 CD, con o senza spazi)
+            ("Targa", re.compile(r'\b[A-Z]{2}\s?\d{3}\s?[A-Z]{2}\b', re.IGNORECASE)),
+            
+            # --- 3. DATI FINANZIARI E AZIENDALI ---
+            
+            # Regola per i codici IBAN internazionali (supporta anche stringhe distanziate da spazi)
+            ("IBAN", re.compile(r'\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]{4}){3,7}(?:\s?[A-Z0-9]{1,4})?\b', re.IGNORECASE)),
+            
+            # Regola Carte di Credito: estesa per Visa, MC, Amex (da 13 a 19 cifre). Posizionata DOPO l'IMEI
             ("Carta di Credito", re.compile(r'\b(?:\d{4}[-\s]?){3}\d{4}|\b3[47]\d{2}[-\s]?\d{6}[-\s]?\d{5}\b|\b\d{4}[-\s]?\d{6}[-\s]?\d{5}\b|\b\d{13,19}\b', re.IGNORECASE)),
-            ("Telefono", re.compile(r'(?:(?:\+|00)\d{1,3}[\s.-]?)?(?:\(\d{2,5}\)[\s.-]?|\d{2,5}[\s.-])\d{5,8}\b', re.IGNORECASE)),  # Regola per i numeri telefonici e prefissi
-            ("Indirizzo IP", re.compile(r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b')),  # Regola matematica esatta per IP IPv4
-            ("Targa", re.compile(r'\b[A-Z]{2}\s?\d{3}\s?[A-Z]{2}\b', re.IGNORECASE)),  # Regola per le targhe automobilistiche italiane (es. AB123CD)
-            ("Azienda", re.compile(r'\b[A-Z0-9À-ÿ][A-Za-z0-9À-ÿ\s&\.\'-]{1,50}?\s+(?:S\.r\.l\.s\.|S\.p\.A\.|S\.r\.l\.|S\.n\.c\.|S\.a\.s\.|S\.u\.r\.l\.|S\.a\.p\.a\.|Soc\.?\s*Coop\.?|SpA|Srls|Srl|Surl|Snc|Sas|GmbH|LLC|Ltd|Inc\.?)(?!\w)', re.IGNORECASE))  # Cerca ragioni sociali tramite i loro acronimi ufficiali
-        ]  # Chiude la lista dei pattern rigidi
+            
+            # Regola per trovare le Partite IVA (11 cifre continue, con o senza prefisso 'IT')
+            ("Partita IVA", re.compile(r'\b(?:IT)?\d{11}\b', re.IGNORECASE)),
+            
+            # Cerca ragioni sociali tramite i loro acronimi ufficiali (S.p.A., S.r.l., ecc.) escludendo false concordanze
+            ("Azienda", re.compile(r'\b[A-Z0-9À-ÿ][A-Za-z0-9À-ÿ\s&\.\'-]{1,50}?\s+(?:S\.r\.l\.s\.|S\.p\.A\.|S\.r\.l\.|S\.n\.c\.|S\.a\.s\.|S\.u\.r\.l\.|S\.a\.p\.a\.|Soc\.?\s*Coop\.?|SpA|Srls|Srl|Surl|Snc|Sas|GmbH|LLC|Ltd|Inc\.?)(?!\w)', re.IGNORECASE)),
+            
+            # --- 4. CONTATTI E LUOGHI (Regole più ampie alla fine) ---
+            
+            # Regola standard per intercettare gli indirizzi Email (inclusa la Posta Elettronica Certificata)
+            ("Email", re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b', re.IGNORECASE)),
+            
+            # Regola per indirizzi fisici italiani (Qualificatore + Nome Via + Civico + CAP + Città + eventuale Provincia)
+            ("Indirizzo", re.compile(r'\b(?:Via|Viale|Corso|Piazza|Piazzale|Largo|Vicolo|Strada)\s+[A-Za-zàèéìòù\s\']+\s+\d{1,4}(?:[/\-][A-Za-z0-9]+)?,?\s+\d{5}\s+[A-Za-zàèéìòù\s\']+(?:\s*\([A-Z]{2}\))?\b', re.IGNORECASE)),
+            
+            # Regola per i numeri telefonici e prefissi. Messa in fondo per evitare che catturi pezzi di P.IVA o Carte di credito
+            ("Telefono", re.compile(r'(?:(?:\+|00)\d{1,3}[\s.-]?)?(?:\(\d{2,5}\)[\s.-]?|\d{2,5}[\s.-])\d{5,8}\b', re.IGNORECASE)),
+
+            # Credenziali in chiaro (Username, Password, Pass, Pwd seguite da due punti)
+            ("Credenziali", re.compile(r'\b(?:Username|User|Password|Pass|Pwd)\s*:\s*\S+', re.IGNORECASE))
+        ]  # Chiude in modo corretto l'array dei pattern rigidi
 
         # Definisce la struttura logica per identificare Nomi e Cognomi con iniziali maiuscole (inclusi prefissi come De, Di, Mac)
         name_pattern = r'\s+[A-ZÀÈÉÌÒÙ][a-zà-ÿ]+(?:[\'\s](?:di\s+|da\s+|de(?:l|ll\'|lla|i|gli|lle)?\s+|De\s+|Di\s+|Mac|Mc|O\')?[A-ZÀÈÉÌÒÙ][a-zà-ÿ]+)?'
