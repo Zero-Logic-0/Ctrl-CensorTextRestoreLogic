@@ -3,15 +3,15 @@ nasce per far si che ogni professionista,azienda,utente non debba inviare dati p
 su agenti IA per avere una risposta, tutto ciò gira in locale nulla esce dal proprio pc.
 
 [Cosa può censurare]
-Codice Fiscale,
-Partita IVA,
-Email,
-IBAN,
-Carta di Credito,
-Telefono,
-Indirizzo IP,
-Targa,
-Azienda,
+-Codice Fiscale,
+-Partita IVA,
+-Email,
+-IBAN,
+-Carta di Credito,
+-Telefono,
+-Indirizzo IP,
+-Targa,
+-Azienda,
 
 COME UTILIZZARLO
 1-installa il file bat
