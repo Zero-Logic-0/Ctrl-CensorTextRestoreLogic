@@ -15,7 +15,7 @@ Azienda,
 
 COME UTILIZZARLO
 1-installa il file bat
-2-avvia il programma utilizzando = Python CTRL.py (nel terminale) o con doppio click sul file 
+2-avvia il programma utilizzando = Python CTRL.py (nel terminale) o con doppio click sul file run.bat
 3-utilizza le varie compinazioni di tasti
 
 (ATTENZIONE, SE IL PROGRAMMA E AVVIATO CONTINUA A LAVORARE FINO A QUANDO NON VIENE CHIUSO)
