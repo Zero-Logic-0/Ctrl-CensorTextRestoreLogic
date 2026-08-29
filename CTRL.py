@@ -6,7 +6,8 @@ import spacy  # Importa la libreria di Intelligenza Artificiale per l'elaborazio
 import pyperclip  # Importa la libreria per leggere il testo copiato e sovrascrivere gli appunti
 from pynput import keyboard  # Importa il modulo per intercettare i tasti globalmente (anche fuori dal terminale)
 
-print("Ctrl Attivo - Avvio in corso...")  # Stampa un messaggio nel terminale per segnalare l'inizio dell'avvio
+print("Ctrl - Avvio in corso...")  # Stampa un messaggio nel terminale per segnalare l'inizio dell'avvio
+print("Caricamento...")
 
 try:  # Avvia un blocco di prova per catturare eventuali errori nel caricamento del modello IA
     nlp = spacy.load("it_core_news_lg")  # Carica in memoria il modello IA avanzato italiano (Large)
@@ -254,11 +255,12 @@ if __name__ == "__main__":  # Controlla che questo file sia eseguito come progra
     stop_event = threading.Event()  # Inizializza l'evento semaforico per permettere la chiusura sicura dei Thread in background
     
     # Stampa l'intestazione grafica e le istruzioni utente nel terminale
-    print("\n=======================================================")
-    print(" C.T.R.L. - Censor Text Restore Logic (Background Mode)")
-    print("=======================================================")
-    print("Stato: ATTIVO (con IA Potenziata e Auto-Reset Sessioni).")
+    print("\n======================================")
+    print(" C.T.R.L. - Censor Text Restore Logic")
+    print("========================================")
+    print("Stato: ATTIVO")
     print("  • Premi 'Ctrl+C' per anonimizzare/ripristinare il testo negli appunti.")
+    print("  • Premi 'Ctrl+V' per incollare")
     print("  • Premi 'Esc' per uscire dal programma.\n")
 
     def stop_program():  # Funzione triggerata dal tasto ESC
@@ -284,4 +286,5 @@ if __name__ == "__main__":  # Controlla che questo file sia eseguito come progra
         print("\nChiusura richiesta...")
     
     print("Arresto completato con successo.")  # Messaggio di addio
+    print("Stato: Disattivato")
     sys.exit(0)  # Comando terminale che killa il processo, libera la RAM e chiude l'istanza Python
